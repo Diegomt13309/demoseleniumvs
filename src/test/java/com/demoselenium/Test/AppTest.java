@@ -1,5 +1,7 @@
 package com.demoselenium.Test;
 
+import static org.testng.Assert.assertEquals;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.time.Duration;
@@ -25,6 +27,8 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.demoselenium.Clases.Novel;
+import com.demoselenium.Pages.HomePage;
+import com.demoselenium.Pages.LoginPage;
 import com.demoselenium.Pages.Novels;
 
 /**
@@ -33,7 +37,10 @@ import com.demoselenium.Pages.Novels;
 public class AppTest {
     private WebDriver driver;
     private Novels novelPage;
+    private HomePage homePage;
+    private LoginPage loginPage;
     public List<Novel> novelList = new ArrayList<>();
+    public static int count = 0;
 
     /**
      * Rigorous Test :-)
@@ -47,9 +54,12 @@ public class AppTest {
         driver.manage().timeouts().implicitlyWait(Duration.ofMillis(1));
         driver.get("https://global.bookwalker.jp/categories/3/");
         novelPage = new Novels(driver);
+        homePage = new HomePage(driver);
+        loginPage = new LoginPage(driver);
+
     }
 
-    @Test
+    @Test(enabled = false)
     public void getAllNovels() {
         boolean flag = true;
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(1));
@@ -78,6 +88,20 @@ public class AppTest {
                     + e.getQuantity() + "\n");
         });
         this.exportExcel(novelList);
+    }
+
+    @Test()
+    public void LoginIntoPage() throws InterruptedException {
+        homePage.signIn.click();
+        loginPage.email.sendKeys("mafivij897@huleos.com");
+        loginPage.password.sendKeys("123456789!");
+        loginPage.signInButton.click();
+        // fix this
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        wait.until(ExpectedConditions
+                .visibilityOfElementLocated(By.cssSelector(".login-nav-area li > a[data-action-label='My Library']")))
+                .click();
+        assertEquals(homePage.myLibrary.getText(), "My Library");
     }
 
     @AfterMethod
@@ -120,24 +144,24 @@ public class AppTest {
         CellStyle style = workbook.createCellStyle();
         style.setWrapText(true);
 
-        for (int i = 0; i < novels.size(); i++) {
-            Row row = sheet.createRow(i + 1);
+        novels.stream().forEach(e -> {
+            Row row = sheet.createRow(++count);
             Cell cell = row.createCell(0);
-            cell.setCellValue(novels.get(i).getName());
+            cell.setCellValue(e.getName());
             cell.setCellStyle(style);
 
             cell = row.createCell(1);
-            cell.setCellValue(novels.get(i).getPrice());
+            cell.setCellValue(e.getPrice());
             cell.setCellStyle(style);
 
             cell = row.createCell(2);
-            cell.setCellValue(novels.get(i).getQuantity());
+            cell.setCellValue(e.getQuantity());
             cell.setCellStyle(style);
-        }
+        });
 
         File currDir = new File(".");
         String path = currDir.getAbsolutePath();
-        String fileLocation = path.substring(0, path.length() - 1) + "Novels.xlsx";
+        String fileLocation = path.substring(0, path.length() - 1) + "NovelsTest.xlsx";
 
         try {
             FileOutputStream outputStream = new FileOutputStream(fileLocation);
